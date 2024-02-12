@@ -13,11 +13,8 @@ type LocationResponse struct {
 }
 
 type WeatherResponse struct {
-	Cod     string `json:"cod"`
-	Message int    `json:"message"`
-	Cnt     int    `json:"cnt"`
-	List    []list `json:"list"`
-	City    city   `json:"city"`
+	List []list `json:"list"`
+	City city   `json:"city"`
 }
 
 /*
