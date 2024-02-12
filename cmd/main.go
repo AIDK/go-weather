@@ -17,8 +17,19 @@ const baseUrl string = "https://api.openweathermap.org/"
 
 func main() {
 
-	location := getGeoLocation()
-	weather := getWeather(location)
+	// create two channels to pass the locationRes and weather data
+	locationRes := make(chan *[]models.LocationResponse)
+	weatherRes := make(chan *models.WeatherResponse)
+	// we get the geo location in order to pass it to the getWeather function
+	// we use the <- operator to pass the locationRes channel to the getGeoLocation function
+	// and get the location from the channel
+	go getGeoLocation(locationRes)
+	// get the location from the channel and pass it to the getWeather function
+	// we use the <- operator to receive the value from the channel
+	// and pass it to the getWeather function
+	go getWeather(weatherRes, <-locationRes)
+	// get the weather from the channel and print it
+	weather := <-weatherRes
 
 	fmt.Printf("%s (%s): %.0fC, %s\n",
 		weather.City.Name,
@@ -45,11 +56,12 @@ func main() {
 
 		fmt.Print(message)
 	}
-
 }
 
-// getGeoLocation returns the location for a given query
-func getGeoLocation() *[]models.LocationResponse {
+// getGeoLocation returns the location for a given location.
+// The location is passed to the function via the out channel and the location is returned via the same channel.
+// The out channel is closed when the function returns.
+func getGeoLocation(out chan<- *[]models.LocationResponse) {
 
 	// get the location from the command line arguments (if present)
 	location := utils.Location()
@@ -84,15 +96,21 @@ func getGeoLocation() *[]models.LocationResponse {
 		panic(err)
 	}
 
-	return locationResponse
+	// pass the location to the out channel and close the channel (we are done)
+	out <- locationResponse
+	close(out)
 }
 
-// getWeather returns the weather for a given location
-func getWeather(location *[]models.LocationResponse) *models.WeatherResponse {
+// getWeather returns the weather for a given location.
+// The location is passed to the function via the out channel and the location is returned via the same channel.
+// The out channel is closed when the function returns.
+// The function takes a locationResponse and a weatherResponse as input.
+func getWeather(out chan<- *models.WeatherResponse, locationResponse *[]models.LocationResponse) {
 
-	// get the latitude and longitude from the location
-	latitude := (*location)[0].Lat
-	longitude := (*location)[0].Lon
+	// get the latitude and longitude from the locationResponse
+	// we use the * operator to dereference the pointer and get the value
+	latitude := (*locationResponse)[0].Lat
+	longitude := (*locationResponse)[0].Lon
 
 	response, err := http.Get(
 		baseUrl +
@@ -124,5 +142,7 @@ func getWeather(location *[]models.LocationResponse) *models.WeatherResponse {
 		panic(err)
 	}
 
-	return weatherResponse
+	// pass the weather to the out channel and close the channel (we are done)
+	out <- weatherResponse
+	close(out)
 }

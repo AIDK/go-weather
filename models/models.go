@@ -7,7 +7,7 @@ Public structs
 */
 type LocationResponse struct {
 	Name  string  `json:"name"`
-	Local local   `json:"local"`
+	Local local   `json:"local_names"`
 	Lat   float64 `json:"lat"`
 	Lon   float64 `json:"lon"`
 }
